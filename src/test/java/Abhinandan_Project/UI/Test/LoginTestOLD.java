@@ -6,10 +6,10 @@ import Abhinandan_Project.UI.Pages.LoginPage;
 import org.testng.annotations.Test;
 
 
-public class LoginTest {
+public class LoginTestOLD {
     @Test
     public void loginTest() {
-        HomePage homePage = new HomePage(Browser.EDGE);
+        HomePage homePage = new HomePage(Browser.EDGE, true);
         LoginPage loginPage = homePage.goToLoginPage();
         loginPage.doLoginWith("basuabhinandan99@gmail.com", "Abhi@12345");
 
