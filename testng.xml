@@ -4,9 +4,9 @@
 
     <test name="E2E_AutomationFrameworkProject">
 
-        <parameter name="browser" value="${browser}"/>
-        <parameter name="isLambdaTest" value="${isLambdaTest}"/>
-        <parameter name="isHeadless" value="${isHeadless}"/>
+<!--        <parameter name="browser" value="${browser}"/>-->
+<!--        <parameter name="isLambdaTest" value="${isLambdaTest}"/>-->
+<!--        <parameter name="isHeadless" value="${isHeadless}"/>-->
 
         <classes>
             <class name="Abhinandan_Project.UI.Test.LoginTest"/>
