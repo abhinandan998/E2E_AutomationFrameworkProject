@@ -34,40 +34,43 @@ public class TestListeners implements ITestListener {
 
     @Override
     public void onTestSuccess(ITestResult result) {
-        logger.info(result.getMethod().getMethodName() +" "+"PASSED");
-        ExtentReporterUtility.getTest().log(Status.PASS, result.getMethod().getMethodName() + " "+ "PASSED");
+        logger.info(result.getMethod().getMethodName() + " " + "PASSED");
+        ExtentReporterUtility.getTest().log(Status.PASS, result.getMethod().getMethodName() + " " + "PASSED");
 
     }
 
     @Override
     public void onTestFailure(ITestResult result) {
-        logger.info(result.getMethod().getMethodName() +" "+"FAILED");
+        logger.info(result.getMethod().getMethodName() + " " + "FAILED");
         logger.error(result.getThrowable().getMessage());
 
-        ExtentReporterUtility.getTest().log(Status.FAIL, result.getMethod().getMethodName() + " "+ "FAILED");
-        ExtentReporterUtility.getTest().log(Status.FAIL,result.getThrowable().getMessage());
+        ExtentReporterUtility.getTest().log(Status.FAIL, result.getMethod().getMethodName() + " " + "FAILED");
+        ExtentReporterUtility.getTest().log(Status.FAIL, result.getThrowable().getMessage());
 
         Object testclass = result.getInstance();
-        logger.info("Capturing Screenshot for the failed test");
-        BrowserUtility browserUtility = ((TestBase)testclass).getInstance();
-        String screenshotPath = browserUtility.takeScreenshot(result.getMethod().getMethodName());
-        ExtentReporterUtility.getTest().addScreenCaptureFromPath(screenshotPath);
-        logger.info("Attaching the Screenshot to the HTML file");
+        BrowserUtility browserUtility = ((TestBase) testclass).getInstance();
+        try {
+            logger.info("Capturing Screenshot for the failed test");
+            String screenshotPath = browserUtility.takeScreenshot(result.getMethod().getMethodName());
+            ExtentReporterUtility.getTest().addScreenCaptureFromPath(screenshotPath);
+            logger.info("Attaching the Screenshot to the HTML file");
+        } catch (Exception e) {
+            logger.warn("Screenshot could not be captured for '" + result.getMethod().getMethodName()
+                    + "' — browser may have crashed or timed out: " + e.getMessage());
+        }
     }
 
     @Override
     public void onTestSkipped(ITestResult result) {
-        logger.warn(result.getMethod().getMethodName() + " "+ "SKIPPED");
+        logger.warn(result.getMethod().getMethodName() + " " + "SKIPPED");
 
-        ExtentReporterUtility.getTest().log(Status.SKIP, result.getMethod().getMethodName() + " "+ "SKIPPED");
+        ExtentReporterUtility.getTest().log(Status.SKIP, result.getMethod().getMethodName() + " " + "SKIPPED");
     }
 
     @Override
     public void onStart(ITestContext context) {
         logger.info("TestSuite Started");
         ExtentReporterUtility.setupSparkReporter("report.html");
-
-
 
     }
 

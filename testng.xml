@@ -4,9 +4,15 @@
 
     <test name="E2E_AutomationFrameworkProject">
 
-        <parameter name="browser" value="${browser}"/>
-        <parameter name="isLambdaTest" value="${isLambdaTest}"/>
-        <parameter name="isHeadless" value="${isHeadless}"/>
+        <!--
+            These parameters are NOT used by @Parameters anymore.
+            TestBase reads directly from System.getProperty() so that
+            Maven -Dbrowser=chrome -DisLambdaTest=true -DisHeadless=true
+            works correctly in both GitHub Actions and Jenkins.
+
+            IDE defaults (no -D flags passed):  browser=chrome, isLambdaTest=false, isHeadless=false
+            GitHub Actions / Maven:              set via pom.xml <systemPropertyVariables> or -D flags
+        -->
 
         <classes>
             <class name="Abhinandan_Project.UI.Test.LoginTest"/>
@@ -14,8 +20,6 @@
             <class name="Abhinandan_Project.UI.Test.AddNewFirstAddressTest"/>
             <class name="Abhinandan_Project.UI.Test.SearchProductTest"/>
             <class name="Abhinandan_Project.UI.Test.ProductCheckOutTest"/>
-
-
         </classes>
 
     </test>

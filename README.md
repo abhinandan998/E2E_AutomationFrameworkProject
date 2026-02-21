@@ -162,6 +162,7 @@ E2E_AutomationFrameworkProject/
 │       ├── csvReaderUtility.java
 │       └── FakeAddressUtility.java ← JavaFaker-based data generator
 │
+├── Jenkinsfile                     ← Jenkins declarative pipeline
 ├── pom.xml                         ← Maven build & dependency management
 └── testng.xml                      ← Test suite configuration
 ```
@@ -249,25 +250,49 @@ public class LoginPage extends BrowserUtility {
 }
 ```
 
-**Example — TestBase manages lifecycle, tests inherit from it:**
+**Example — TestBase manages lifecycle across TestNG IDE, GitHub Actions, and Jenkins:**
 
 ```java
-public class TestBase extends BrowserUtility {
+public class TestBase {
+
+    protected HomePage homePage;
+    private boolean isLambdaTest;
+
     @BeforeMethod
-    public void setup(String browser, String isLambdaTest, String isHeadless) {
-        // Browser initialization once, reused by all test classes
+    public void setup(Method method) {   // ← java.lang.reflect.Method — universally injectable by TestNG
+
+        // Works in ALL three environments:
+        //   TestNG IDE  → defaults applied (no -D flags)
+        //   GitHub Actions → reads -Dbrowser=chrome -DisLambdaTest=true from maven.yml
+        //   Jenkins     → reads -Dbrowser=${BROWSER} -DisLambdaTest=${IS_LAMBDATEST} from Jenkinsfile
+        String browser     = System.getProperty("browser",       "chrome");
+        boolean lambdaTest = Boolean.parseBoolean(System.getProperty("isLambdaTest", "false"));
+        boolean headless   = Boolean.parseBoolean(System.getProperty("isHeadless",   "false"));
+        this.isLambdaTest  = lambdaTest;
+
+        if (lambdaTest) {
+            WebDriver d = LambdaTestUtility.InitializeLambdaTestSession(browser, method.getName());
+            homePage = new HomePage(d);
+        } else {
+            homePage = new HomePage(Browser.valueOf(browser.toUpperCase()), headless);
+        }
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void tearDown() {
-        quit();  // from BrowserUtility
+        if (isLambdaTest) LambdaTestUtility.quitSeesion();
+        else homePage.quit();
     }
 }
 
-public class LoginTest extends TestBase {
-    // Fully inherits setup/teardown — focuses only on test logic
-}
+// All test classes inherit setup/teardown for free
+public class LoginTest extends TestBase { ... }
+public class SearchProductTest extends TestBase { ... }
 ```
+
+> ⚠️ **Key Rules for child `@BeforeMethod`:**
+> 1. Child classes needing login preconditions **must use a different method name** (e.g. `loginSetup()`) to avoid overriding `setup()` and leaving `homePage` null.
+> 2. Always use `System.getProperty()` — it reads Maven `-D` flags from **all** CI environments, with safe defaults for IDE runs.
 
 ---
 
@@ -872,6 +897,38 @@ private static ThreadLocal<WebDriver> driver = new ThreadLocal<>();
 
 No shared state between test threads — eliminates race conditions entirely.
 
+### Strategy 7: Correct `TakesScreenshot` Cast (ClassCastException fix)
+
+A subtle but critical bug — casting `ThreadLocal` itself instead of the `WebDriver` held inside it:
+
+```java
+// ❌ WRONG — driver is ThreadLocal<WebDriver>, NOT a WebDriver — ClassCastException guaranteed
+TakesScreenshot screenshot = (TakesScreenshot) driver;
+
+// ✅ CORRECT — driver.get() returns the actual WebDriver for this thread
+TakesScreenshot screenshot = (TakesScreenshot) driver.get();
+```
+
+### Strategy 8: Separate `@BeforeMethod` Names to Prevent `NullPointerException`
+
+When a child test class defines its own `@BeforeMethod`, the method name **must differ** from the parent's `setup()`. If the same name is reused, TestNG only runs the child's version — skipping `homePage` initialisation entirely:
+
+```java
+// ❌ WRONG — shadows TestBase.setup(), homePage stays null → NullPointerException
+@BeforeMethod
+public void setup() {
+    myAccountPage = homePage.goToLoginPage()...;  // homePage is NULL!
+}
+
+// ✅ CORRECT — unique name; TestBase.setup() runs first, then this runs second
+@BeforeMethod
+public void loginSetup() {
+    myAccountPage = homePage.goToLoginPage().doLoginWith(email, password);
+}
+```
+
+**Applied in:** `SearchProductTest`, `ProductCheckOutTest`, `AddNewFirstAddressTest`
+
 ---
 
 ## 🌍 Multi-Environment Configuration
@@ -903,7 +960,24 @@ public class PropertiesUTIL {
 }
 ```
 
-**TestNG XML suite configuration — all 5 test classes registered, running in parallel (8 threads):**
+**How parameters flow from Maven/CI to TestBase:**
+
+```
+ GitHub Actions / Maven command
+ mvn test -Dbrowser=chrome -DisLambdaTest=true -DisHeadless=true
+           ↓
+ pom.xml <systemPropertyVariables>
+   sets: System.setProperty("browser",       "chrome")
+         System.setProperty("isLambdaTest",   "true")
+         System.setProperty("isHeadless",     "true")
+           ↓
+ TestBase.setup() reads:
+   System.getProperty("browser",       "chrome")  ← default if not passed
+   System.getProperty("isLambdaTest",  "false")  ← default if not passed
+   System.getProperty("isHeadless",    "false")  ← default if not passed
+```
+
+**TestNG XML suite configuration — all 5 test classes, 8 parallel threads:**
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -912,9 +986,12 @@ public class PropertiesUTIL {
 
     <test name="E2E_AutomationFrameworkProject">
 
-        <parameter name="browser"       value="${browser}"/>
-        <parameter name="isLambdaTest"  value="${isLambdaTest}"/>
-        <parameter name="isHeadless"    value="${isHeadless}"/>
+        <!--
+            No <parameter> tags needed here.
+            TestBase reads directly from System.getProperty().
+            IDE defaults: chrome / false / false (no -D flags).
+            CI/CD: overridden by Maven -Dbrowser=chrome -DisLambdaTest=true.
+        -->
 
         <classes>
             <class name="Abhinandan_Project.UI.Test.LoginTest"/>
@@ -929,7 +1006,11 @@ public class PropertiesUTIL {
 </suite>
 ```
 
-> All **5 test classes** run concurrently using `parallel="methods"` with **8 threads** — maximising execution speed while keeping each test method thread-safe via `ThreadLocal<WebDriver>`.
+> All **5 test classes** run concurrently — `parallel="methods"` with **8 threads**, each thread gets its own `WebDriver` via `ThreadLocal`.
+>
+> **IDE vs Maven / GitHub Actions:** No code changes needed between environments. The `-D` system properties are picked up automatically.
+>
+> **IDE vs Maven:** The parameter values `chrome / false / false` are the hardcoded defaults for running directly from IntelliJ/Eclipse. When running via `mvn test -Dbrowser=chrome -DisLambdaTest=true`, Maven's `<systemPropertyVariables>` in `pom.xml` override these transparently — so **no manual edits needed between IDE and CI runs**.
 
 ---
 
