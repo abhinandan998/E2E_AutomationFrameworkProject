@@ -1,8 +1,11 @@
 package Abhinandan_Project.UI.Test;
 
 import static  Abhinandan_Project.Constants.Size.*;
+
+import Abhinandan_Project.UI.Pages.ShoppingCartPage;
 import Abhinandan_Project.UI.Pages.searchResultPage;
 import org.openqa.selenium.devtools.v142.dom.model.ShadowRootType;
+import org.testng.Assert;
 import org.testng.ITestResult;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -18,10 +21,23 @@ private  searchResultPage searchResultPage;
                 .searchForProduct(SEARCH_TERM);
     }
 
-    @Test(description = "Verify if the logged in user is able to buy a dress", groups = {"e2e", "smoke", "sanity"})
+    @Test(description = "Verify checkout shows shipping error",
+            groups = {"e2e","smoke","sanity"})
     public void checkoutTest(){
-        searchResultPage.clickOnTheProductAtIndex(1).changeSize(L).addProductToCart()
-                .proceedToCheckout().goToConformAddressPage().goToShipmentPage().goToPaymentPage();
 
+        String errorMsg = searchResultPage
+                .clickOnTheProductAtIndex(1)
+                .changeSize(L)
+                .addProductToCart()
+                .proceedToCheckout()
+                .goToConformAddressPage()
+                .goToShipmentPage()
+                .acceptTerms()
+                .getShippingErrorMessage();
+
+        Assert.assertEquals(
+                errorMsg,
+                "There are no carriers that deliver to the address you selected."
+        );
     }
 }
