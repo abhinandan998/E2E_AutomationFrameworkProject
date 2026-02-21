@@ -903,20 +903,33 @@ public class PropertiesUTIL {
 }
 ```
 
-**TestNG XML parameters drive environment selection:**
+**TestNG XML suite configuration — all 5 test classes registered, running in parallel (8 threads):**
 
 ```xml
+<?xml version="1.0" encoding="UTF-8"?>
+
 <suite name="All Test Suite" parallel="methods" thread-count="8">
+
     <test name="E2E_AutomationFrameworkProject">
-        <parameter name="browser" value="${browser}"/>
-        <parameter name="isLambdaTest" value="${isLambdaTest}"/>
-        <parameter name="isHeadless" value="${isHeadless}"/>
+
+        <parameter name="browser"       value="${browser}"/>
+        <parameter name="isLambdaTest"  value="${isLambdaTest}"/>
+        <parameter name="isHeadless"    value="${isHeadless}"/>
+
         <classes>
             <class name="Abhinandan_Project.UI.Test.LoginTest"/>
+            <class name="Abhinandan_Project.UI.Test.InvalidCredsLoginTest"/>
+            <class name="Abhinandan_Project.UI.Test.AddNewFirstAddressTest"/>
+            <class name="Abhinandan_Project.UI.Test.SearchProductTest"/>
+            <class name="Abhinandan_Project.UI.Test.ProductCheckOutTest"/>
         </classes>
+
     </test>
+
 </suite>
 ```
+
+> All **5 test classes** run concurrently using `parallel="methods"` with **8 threads** — maximising execution speed while keeping each test method thread-safe via `ThreadLocal<WebDriver>`.
 
 ---
 
