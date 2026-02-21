@@ -10,6 +10,7 @@ import org.openqa.selenium.WebDriver;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 
 import static Abhinandan_Project.Constants.Browser.CHROME;
@@ -25,7 +26,7 @@ public class TestBase {
 
     @Parameters({"browser","isLambdaTest","isHeadless"})
     @BeforeMethod(description = "Load the HomePge of the website")
-    public void setup(String browser,boolean isLambdaTest,boolean isHeadless, ITestResult result) {
+    public void setup(@Optional("chrome") String browser,@Optional("false") boolean isLambdaTest,@Optional("false") boolean isHeadless, ITestResult result) {
 
        this.isLambdaTest= isLambdaTest;
         WebDriver lambdaDriver;
@@ -44,12 +45,12 @@ public class TestBase {
 
         return homePage;
     }
-    @AfterMethod(description = "Tear Down The Browser")
-    public void tearDown(){
-        if(isLambdaTest){
-            LambdaTestUtility.quitSeesion();
-        }else{
-            homePage.quit();
-        }
-    }
+//    @AfterMethod(description = "Tear Down The Browser")
+//    public void tearDown(){
+//        if(isLambdaTest){
+//            LambdaTestUtility.quitSeesion();
+//        }else{
+//            homePage.quit();
+//        }
+//    }
 }
