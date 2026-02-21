@@ -323,7 +323,10 @@ public abstract class BrowserUtility {
     }
 
     public void quit(){
-        driver.get().quit();
+        if(driver.get() != null){
+            driver.get().quit();
+            driver.remove();
+        }
     }
 }
 

@@ -45,7 +45,7 @@ public class TestBase {
 
         return homePage;
     }
-    @AfterMethod(description = "Tear Down The Browser")
+    @AfterMethod(description = "Tear Down The Browser", alwaysRun = true)
     public void tearDown(){
         if(isLambdaTest){
             LambdaTestUtility.quitSeesion();
