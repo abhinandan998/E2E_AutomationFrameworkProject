@@ -10,6 +10,12 @@
 
         <classes>
             <class name="Abhinandan_Project.UI.Test.LoginTest"/>
+            <class name="Abhinandan_Project.UI.Test.InvalidCredsLoginTest"/>
+            <class name="Abhinandan_Project.UI.Test.AddNewFirstAddressTest"/>
+            <class name="Abhinandan_Project.UI.Test.SearchProductTest"/>
+            <class name="Abhinandan_Project.UI.Test.ProductCheckOutTest"/>
+
+
         </classes>
 
     </test>
